@@ -442,17 +442,34 @@
                           </div>
 
                           <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                              <span class="text-cyan-400 font-semibold flex items-center gap-1 mb-1">
-                                ⚡ 0-3s Hook
-                              </span>
-                              <p class="text-slate-300 line-clamp-2 leading-relaxed">{p.hook}</p>
+                            <div class="bg-black/40 p-3.5 rounded-xl border border-white/5 flex flex-col justify-between">
+                              <div>
+                                <span class="text-cyan-400 font-semibold flex items-center gap-1 mb-1">
+                                  ⚡ 0-3s Stop-Scroll Hook
+                                </span>
+                                <p class="text-slate-200 leading-relaxed font-medium">{p.hook}</p>
+                              </div>
+                              {p.hook_reasoning && (
+                                <div class="mt-2.5 pt-2 border-t border-white/5">
+                                  <span class="text-[10px] uppercase font-mono text-cyan-400/80 block mb-0.5">Why this hook stops the scroll:</span>
+                                  <p class="text-slate-400 text-[11px] leading-relaxed italic">{p.hook_reasoning}</p>
+                                </div>
+                              )}
                             </div>
-                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                              <span class="text-pink-400 font-semibold flex items-center gap-1 mb-1">
-                                🔥 Cliffhanger
-                              </span>
-                              <p class="text-slate-300 line-clamp-2 leading-relaxed">{p.cliffhanger}</p>
+
+                            <div class="bg-black/40 p-3.5 rounded-xl border border-white/5 flex flex-col justify-between">
+                              <div>
+                                <span class="text-pink-400 font-semibold flex items-center gap-1 mb-1">
+                                  🔥 Cliffhanger Cut-off
+                                </span>
+                                <p class="text-slate-200 leading-relaxed font-medium">{p.cliffhanger}</p>
+                              </div>
+                              {p.cliffhanger_reasoning && (
+                                <div class="mt-2.5 pt-2 border-t border-white/5">
+                                  <span class="text-[10px] uppercase font-mono text-pink-400/80 block mb-0.5">Why this cutoff creates urgency:</span>
+                                  <p class="text-slate-400 text-[11px] leading-relaxed italic">{p.cliffhanger_reasoning}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -629,13 +646,29 @@ Ominous string swell fades to black.
                           </div>
 
                           <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                              <span class="text-cyan-400 font-semibold block mb-1">⚡ 0-3s Hook</span>
-                              <p class="text-slate-300 leading-relaxed">{p.hook}</p>
+                            <div class="bg-black/40 p-3.5 rounded-xl border border-white/5 flex flex-col justify-between">
+                              <div>
+                                <span class="text-cyan-400 font-semibold block mb-1">⚡ 0-3s Stop-Scroll Hook</span>
+                                <p class="text-slate-200 leading-relaxed font-medium">{p.hook}</p>
+                              </div>
+                              {p.hook_reasoning && (
+                                <div class="mt-2.5 pt-2 border-t border-white/5">
+                                  <span class="text-[10px] uppercase font-mono text-cyan-400/80 block mb-0.5">Why this hook stops the scroll:</span>
+                                  <p class="text-slate-400 text-[11px] leading-relaxed italic">{p.hook_reasoning}</p>
+                                </div>
+                              )}
                             </div>
-                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
-                              <span class="text-pink-400 font-semibold block mb-1">🔥 Cliffhanger</span>
-                              <p class="text-slate-300 leading-relaxed">{p.cliffhanger}</p>
+                            <div class="bg-black/40 p-3.5 rounded-xl border border-white/5 flex flex-col justify-between">
+                              <div>
+                                <span class="text-pink-400 font-semibold block mb-1">🔥 Cliffhanger Cut-off</span>
+                                <p class="text-slate-200 leading-relaxed font-medium">{p.cliffhanger}</p>
+                              </div>
+                              {p.cliffhanger_reasoning && (
+                                <div class="mt-2.5 pt-2 border-t border-white/5">
+                                  <span class="text-[10px] uppercase font-mono text-pink-400/80 block mb-0.5">Why this cutoff creates urgency:</span>
+                                  <p class="text-slate-400 text-[11px] leading-relaxed italic">{p.cliffhanger_reasoning}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
 

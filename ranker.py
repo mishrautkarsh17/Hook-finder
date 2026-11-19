@@ -39,7 +39,9 @@ def process_show(data_dir: str = "data", api_key: Optional[str] = None, max_epis
             c["score_details"] = score_data
             c["overall_score"] = score_data["overall_score"]
             c["hook"] = score_data["hook"]
+            c["hook_reasoning"] = score_data.get("hook_reasoning", "")
             c["cliffhanger"] = score_data["cliffhanger"]
+            c["cliffhanger_reasoning"] = score_data.get("cliffhanger_reasoning", "")
             c["why_it_works"] = score_data["why_it_works"]
             all_promos.append(c)
 
@@ -53,7 +55,9 @@ def process_show(data_dir: str = "data", api_key: Optional[str] = None, max_epis
             c["score_details"] = score_data
             c["overall_score"] = score_data["overall_score"]
             c["hook"] = score_data["hook"]
+            c["hook_reasoning"] = score_data.get("hook_reasoning", "")
             c["cliffhanger"] = score_data["cliffhanger"]
+            c["cliffhanger_reasoning"] = score_data.get("cliffhanger_reasoning", "")
             c["why_it_works"] = score_data["why_it_works"]
             all_promos.append(c)
 
@@ -97,7 +101,9 @@ def export_outputs(promos: List[Dict[str, Any]], output_prefix: str = "promos_ma
                 for seg in p["segments"]
             ],
             "hook": p["hook"],
+            "hook_reasoning": p.get("hook_reasoning", ""),
             "cliffhanger": p["cliffhanger"],
+            "cliffhanger_reasoning": p.get("cliffhanger_reasoning", ""),
             "why_it_works": p["why_it_works"],
             "scores": {
                 "overall": p["overall_score"],

@@ -66,7 +66,9 @@ def analyze_screenplay(req: ScreenplayRequest):
                 for seg in c["segments"]
             ],
             "hook": score_res["hook"],
+            "hook_reasoning": score_res.get("hook_reasoning", "Captures immediate psychological attention in first 3s."),
             "cliffhanger": score_res["cliffhanger"],
+            "cliffhanger_reasoning": score_res.get("cliffhanger_reasoning", "Cuts at the peak of emotional escalation before resolution."),
             "why_it_works": score_res["why_it_works"],
             "scores": {
                 "overall": score_res["overall_score"],

@@ -98,7 +98,9 @@ def score_with_nlp(candidate: Dict[str, Any]) -> Dict[str, Any]:
         "standalone_score": standalone_score,
         "overall_score": overall_score,
         "hook": hook_desc,
+        "hook_reasoning": f"Opens on immediate high-contrast emotional action ({hook_desc[:60]}...), breaking feed scroll patterns within the critical 3-second attention window.",
         "cliffhanger": cliff_desc,
+        "cliffhanger_reasoning": f"Abruptly severs narrative flow right at peak confrontation ({cliff_desc[:60]}...), leaving an intense psychological curiosity gap.",
         "why_it_works": why_it_works
     }
 
@@ -123,9 +125,11 @@ Respond with a valid JSON object only (no markdown, no backticks, no wrap):
   "cliffhanger_score": <int 1-10>,
   "standalone_score": <int 1-10>,
   "overall_score": <float 1-10>,
-  "hook": "<one concise sentence describing the hook in the first 3 seconds>",
-  "cliffhanger": "<one concise sentence describing the unresolved cut-off moment>",
-  "why_it_works": "<one compelling line on why this promo will convert scrolling social media users into viewers>"
+  "hook": "<what specifically happens in the first 3 seconds>",
+  "hook_reasoning": "<1-2 sentences explaining WHY this specific 0-3s opening stops a scrolling user on TikTok/Reels>",
+  "cliffhanger": "<what specifically happens at the exact cut-off moment>",
+  "cliffhanger_reasoning": "<1-2 sentences explaining WHY this cutoff creates severe psychological tension and forces the viewer to click>",
+  "why_it_works": "<one overarching line on why this promo will convert scrolling social media users into paying viewers>"
 }}
 """
     models_to_try = [
