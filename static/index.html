@@ -63,6 +63,9 @@
       const [screenplayText, setScreenplayText] = useState('');
       const [analyzingLive, setAnalyzingLive] = useState(false);
       const [liveResults, setLiveResults] = useState(null);
+      const [batchMode, setBatchMode] = useState(false);
+      const [batchFiles, setBatchFiles] = useState([]);
+      const [batchStatus, setBatchStatus] = useState('');
 
       useEffect(() => {
         fetchCatalog();
@@ -80,6 +83,9 @@
       };
 
       const handleAnalyzeLive = async () => {
+        if (batchFiles && batchFiles.length > 0) {
+          return handleBatchUploadShow(batchFiles);
+        }
         if (!screenplayText.trim()) return;
         setAnalyzingLive(true);
         try {
@@ -502,16 +508,32 @@
                     deterministic temporal slicing, 20–60s window generation, and live Gemini AI qualitative scoring.
                   </p>
 
-                  {/* DRAG & DROP FILE UPLOAD AREA */}
+                  {/* DRAG & DROP FILE UPLOAD AREA (Single File, Multiple Files, or Entire Show ZIP) */}
                   <div class="mb-4">
-                    <label class="border-2 border-dashed border-white/15 hover:border-red-500/50 transition-all rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer bg-[#0D101A] hover:bg-[#121624] group">
+                    <label class="border-2 border-dashed border-white/15 hover:border-red-500/50 transition-all rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-[#0D101A] hover:bg-[#121624] group relative">
                       <input 
                         type="file" 
-                        accept=".txt"
+                        accept=".txt,.zip"
+                        multiple
                         class="hidden"
                         onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
+                          const files = Array.from(e.target.files);
+                          if (!files || files.length === 0) return;
+
+                          // Check if ZIP uploaded or multiple files selected
+                          const hasZip = files.some(f => f.name.toLowerCase().endsWith('.zip'));
+                          if (hasZip || files.length > 1) {
+                            setBatchMode(true);
+                            setBatchFiles(files);
+                            const label = hasZip ? `Archive: ${files[0].name}` : `${files.length} screenplay episode files selected`;
+                            setBatchStatus(`Selected ${label}. Click "Process & Rank Entire Show" below.`);
+                            setScreenplayText(`--- ENTIRE SHOW BATCH UPLOAD MODE ---\n${label}\nClick the red button below to parse all episodes, discover cross-episode promos, and rank the entire show.`);
+                          } else {
+                            // Single .txt file
+                            setBatchMode(false);
+                            setBatchFiles([]);
+                            setBatchStatus('');
+                            const file = files[0];
                             const reader = new FileReader();
                             reader.onload = (evt) => {
                               setScreenplayText(evt.target.result);
@@ -525,11 +547,11 @@
                           <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
-                      <span class="text-xs font-semibold text-slate-300 group-hover:text-white">
-                        Click to upload screenplay file (.txt)
+                      <span class="text-xs font-semibold text-slate-200 group-hover:text-white">
+                        {batchMode ? batchStatus : 'Click to upload Screenplay File (.txt) or Entire Show (.zip / multiple .txt)'}
                       </span>
-                      <span class="text-[11px] text-slate-500 mt-0.5">
-                        Reads any file from your data folder or new unseen screenplays
+                      <span class="text-[11px] text-slate-500 mt-1">
+                        Supports single episode files, multi-file select (all 50 episodes), or a single .zip of the entire drama
                       </span>
                     </label>
                   </div>
@@ -539,10 +561,10 @@
                       <span>Screenplay Text Buffer</span>
                       {screenplayText && (
                         <button 
-                          onClick={() => setScreenplayText('')}
+                          onClick={() => { setScreenplayText(''); setBatchMode(false); setBatchFiles([]); setBatchStatus(''); }}
                           class="text-red-400 hover:text-red-300 text-[10px] normal-case"
                         >
-                          Clear Text
+                          Clear Selection
                         </button>
                       )}
                     </div>
@@ -603,11 +625,11 @@ Ominous string swell fades to black.
                       {analyzingLive ? (
                         <>
                           <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Scoring via Gemini API...</span>
+                          <span>{batchMode ? "Processing Entire Show..." : "Scoring via Gemini API..."}</span>
                         </>
                       ) : (
                         <>
-                          <span>🚀 Analyze & Generate Promos Live</span>
+                          <span>{batchMode ? "🚀 Process & Rank Entire Show" : "🚀 Analyze & Generate Promos Live"}</span>
                         </>
                       )}
                     </button>
