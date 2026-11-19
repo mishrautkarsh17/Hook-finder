@@ -49,7 +49,12 @@
       const [promos, setPromos] = useState([]);
       const [loading, setLoading] = useState(false);
       const [selectedPromo, setSelectedPromo] = useState(null);
+      // Filters & Search
       const [filterScore, setFilterScore] = useState(8.0);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedArchetype, setSelectedArchetype] = useState('All');
+      const [crossEpFilter, setCrossEpFilter] = useState('all'); // 'all', 'single', 'cross'
+      const [copiedId, setCopiedId] = useState(null);
       const [activeTab, setActiveTab] = useState('catalog'); // 'catalog', 'live_tester', 'architecture'
       const [apiKey, setApiKey] = useState('');
       
@@ -94,7 +99,49 @@
         }
       };
 
-      const filteredPromos = promos.filter(p => p.scores.overall >= filterScore);
+      const getArchetype = (p) => {
+        const text = (p.hook + ' ' + p.cliffhanger + ' ' + p.why_it_works).toLowerCase();
+        if (text.includes('rescue') || text.includes('hero') || text.includes('duel') || text.includes('fight')) return 'Hero Arrival';
+        if (text.includes('altar') || text.includes('wedding') || text.includes('bride') || text.includes('groom')) return 'Altar Betrayal';
+        if (text.includes('ring') || text.includes('will') || text.includes('seal') || text.includes('crown') || text.includes('secret')) return 'Secret Identity';
+        if (text.includes('mother') || text.includes('sister') || text.includes('daughter') || text.includes('slap')) return 'Family Conflict';
+        return 'Revenge & Drama';
+      };
+
+      const copyCutsheet = (p) => {
+        const lines = [
+          `🎬 KUKU VIDEO EDITOR CUT-SHEET`,
+          `Show: I Married a Broken Soldier`,
+          `Episode(s): ${p.episode}`,
+          `Rank: #${p.rank} (Score: ${p.scores.overall}/10)`,
+          `Total Duration: ${p.total_duration_sec}s`,
+          ``,
+          `TIMESTAMPS:`,
+          ...p.segments.map((s, i) => `  [Cut ${i+1}] ${s.episode} | Start: ${s.start_time} ➔ End: ${s.end_time} (${s.duration_sec}s)`),
+          ``,
+          `HOOK (0-3s): ${p.hook}`,
+          `CLIFFHANGER: ${p.cliffhanger}`,
+          `REASONING: ${p.why_it_works}`
+        ].join('\n');
+        
+        navigator.clipboard.writeText(lines);
+        setCopiedId(p.rank);
+        setTimeout(() => setCopiedId(null), 2000);
+      };
+
+      const filteredPromos = promos.filter(p => {
+        const matchScore = p.scores.overall >= filterScore;
+        const matchSearch = searchQuery === '' || 
+          p.episode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.hook.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.cliffhanger.toLowerCase().includes(searchQuery.toLowerCase());
+        const arch = getArchetype(p);
+        const matchArch = selectedArchetype === 'All' || arch === selectedArchetype;
+        const matchCross = crossEpFilter === 'all' || 
+          (crossEpFilter === 'cross' && p.is_cross_episode) ||
+          (crossEpFilter === 'single' && !p.is_cross_episode);
+        return matchScore && matchSearch && matchArch && matchCross;
+      });
 
       return (
         <div class="flex h-screen overflow-hidden">
@@ -200,21 +247,69 @@
               <div class="flex-1 flex overflow-hidden">
                 {/* PROMOS FEED */}
                 <div class="flex-1 overflow-y-auto p-8 space-y-4">
-                  {/* Filter Toolbar */}
-                  <div class="flex items-center justify-between pb-4 border-b border-white/5">
-                    <div class="flex items-center space-x-4">
-                      <span class="text-xs font-semibold text-slate-400">Minimum Score:</span>
-                      <input 
-                        type="range" min="6.0" max="10.0" step="0.1" 
-                        value={filterScore} 
-                        onChange={(e) => setFilterScore(parseFloat(e.target.value))}
-                        class="w-32 accent-red-500" 
-                      />
-                      <span class="text-xs font-mono text-red-400 font-bold">{filterScore} / 10</span>
+                  {/* Filter & Search Toolbar */}
+                  <div class="space-y-3 pb-4 border-b border-white/5">
+                    <div class="flex items-center justify-between">
+                      {/* Search box */}
+                      <div class="relative w-80">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                        <input 
+                          type="text" 
+                          placeholder="Search dialogue, character, trope..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          class="w-full bg-[#121622] border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500/50"
+                        />
+                      </div>
+
+                      {/* Score slider */}
+                      <div class="flex items-center space-x-3 bg-[#121622] px-4 py-1.5 rounded-xl border border-white/5">
+                        <span class="text-xs font-semibold text-slate-400">Min Score:</span>
+                        <input 
+                          type="range" min="6.0" max="10.0" step="0.1" 
+                          value={filterScore} 
+                          onChange={(e) => setFilterScore(parseFloat(e.target.value))}
+                          class="w-24 accent-red-500" 
+                        />
+                        <span class="text-xs font-mono text-red-400 font-bold">{filterScore}</span>
+                      </div>
+
+                      <span class="text-xs font-mono text-slate-500">
+                        Showing {filteredPromos.length} of {promos.length}
+                      </span>
                     </div>
-                    <span class="text-xs font-mono text-slate-500">
-                      Showing {filteredPromos.length} of {promos.length} promos
-                    </span>
+
+                    {/* Trope / Archetype filter pills */}
+                    <div class="flex items-center space-x-2 pt-1">
+                      <span class="text-[11px] font-mono uppercase text-slate-500">Trope:</span>
+                      {['All', 'Altar Betrayal', 'Hero Arrival', 'Family Conflict', 'Secret Identity', 'Revenge & Drama'].map((arch) => (
+                        <button
+                          key={arch}
+                          onClick={() => setSelectedArchetype(arch)}
+                          class={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            selectedArchetype === arch 
+                              ? 'bg-red-600 text-white shadow-sm shadow-red-600/40' 
+                              : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+                          }`}
+                        >
+                          {arch}
+                        </button>
+                      ))}
+
+                      <div class="border-l border-white/10 h-4 mx-2"></div>
+                      
+                      {/* Cross vs Single */}
+                      <button 
+                        onClick={() => setCrossEpFilter(crossEpFilter === 'cross' ? 'all' : 'cross')}
+                        class={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                          crossEpFilter === 'cross' 
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
+                            : 'bg-white/5 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        ⚡ Cross-Episode Only ({promos.filter(p=>p.is_cross_episode).length})
+                      </button>
+                    </div>
                   </div>
 
                   {/* Promo List */}
@@ -237,15 +332,35 @@
                                 #{p.rank}
                               </span>
                               <div>
-                                <h3 class="font-bold text-white text-base">{p.episode}</h3>
+                                <div class="flex items-center space-x-2">
+                                  <h3 class="font-bold text-white text-base">{p.episode}</h3>
+                                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-300">
+                                    {getArchetype(p)}
+                                  </span>
+                                  {p.is_cross_episode && (
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                                      Multi-Segment
+                                    </span>
+                                  )}
+                                </div>
                                 <p class="text-xs text-slate-400 font-mono mt-0.5">
                                   {p.segments[0].start_time} ➔ {p.segments[p.segments.length - 1].end_time} • {p.total_duration_sec}s
                                 </p>
                               </div>
                             </div>
-                            <div class="text-right">
-                              <div class="text-lg font-bold font-mono text-red-500">★ {p.scores.overall}</div>
-                              <span class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Overall Score</span>
+                            <div class="flex items-center space-x-3">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); copyCutsheet(p); }}
+                                class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-slate-300 hover:text-white transition-all flex items-center space-x-1.5"
+                                title="Copy timestamp cut-sheet for video editors"
+                              >
+                                <i data-lucide={copiedId === p.rank ? "check" : "copy"} class="w-3.5 h-3.5"></i>
+                                <span>{copiedId === p.rank ? "Copied Cut-Sheet!" : "Export Cut-Sheet"}</span>
+                              </button>
+                              <div class="text-right">
+                                <div class="text-lg font-bold font-mono text-red-500">★ {p.scores.overall}</div>
+                                <span class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Overall Score</span>
+                              </div>
                             </div>
                           </div>
 
