@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches
+cache/
+.pytest_cache/
+
+# Large input archives
+*.zip
+I Married a Broken Soldier. He was a Duke-scripts (2) (1)/
+
+# Environment & API keys
+.env
+.venv/
+env/
+venv/
+
+# IDE files
+.vscode/
+.idea/

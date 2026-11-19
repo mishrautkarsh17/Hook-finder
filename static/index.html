@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuku Promo Studio — AI Microdrama Promo Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- React 18 & ReactDOM & Babel for in-browser standalone execution (Zero Node.js needed!) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #08090E;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .glass {
+      background: rgba(16, 20, 31, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-active {
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.15);
+    }
+    .phone-border {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0d14; }
+    ::-webkit-scrollbar-thumb { background: #222938; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen antialiased selection:bg-red-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [promos, setPromos] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [selectedPromo, setSelectedPromo] = useState(null);
+      const [filterScore, setFilterScore] = useState(8.0);
+      const [activeTab, setActiveTab] = useState('catalog'); // 'catalog', 'live_tester', 'architecture'
+      const [apiKey, setApiKey] = useState('');
+      
+      // Live Tester State
+      const [screenplayText, setScreenplayText] = useState('');
+      const [analyzingLive, setAnalyzingLive] = useState(false);
+      const [liveResults, setLiveResults] = useState(null);
+
+      useEffect(() => {
+        fetchCatalog();
+      }, []);
+
+      const fetchCatalog = async () => {
+        try {
+          const res = await fetch('/api/promos');
+          const data = await res.json();
+          setPromos(data);
+          if (data.length > 0) setSelectedPromo(data[0]);
+        } catch (err) {
+          console.error("Failed to load catalog", err);
+        }
+      };
+
+      const handleAnalyzeLive = async () => {
+        if (!screenplayText.trim()) return;
+        setAnalyzingLive(true);
+        try {
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ screenplay_text: screenplayText, api_key: apiKey })
+          });
+          const data = await res.json();
+          setLiveResults(data);
+          if (data.promos && data.promos.length > 0) {
+            setSelectedPromo(data.promos[0]);
+          }
+        } catch (err) {
+          alert('Analysis failed: ' + err);
+        } finally {
+          setAnalyzingLive(false);
+        }
+      };
+
+      const filteredPromos = promos.filter(p => p.scores.overall >= filterScore);
+
+      return (
+        <div class="flex h-screen overflow-hidden">
+          
+          {/* LEFT SIDEBAR NAVIGATION */}
+          <aside class="w-72 bg-[#0C0E16] border-r border-white/5 flex flex-col justify-between shrink-0">
+            <div>
+              {/* Brand Logo */}
+              <div class="p-6 border-b border-white/5 flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center shadow-lg shadow-red-500/20">
+                  <i data-lucide="clapperboard" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                  <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+                    Kuku <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-mono font-medium">STUDIO</span>
+                  </h1>
+                  <p class="text-[11px] text-slate-500 font-medium">Vertical AI Promo Engine</p>
+                </div>
+              </div>
+
+              {/* Navigation Menu */}
+              <nav class="p-4 space-y-1">
+                <button 
+                  onClick={() => setActiveTab('catalog')}
+                  class={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    activeTab === 'catalog' 
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/30' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                  <span>Ranked Promos Catalog</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTab('live_tester')}
+                  class={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    activeTab === 'live_tester' 
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/30' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                  <span>Live Screenplay Tester</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTab('architecture')}
+                  class={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    activeTab === 'architecture' 
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/30' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <i data-lucide="cpu" class="w-4 h-4"></i>
+                  <span>System Architecture</span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Sidebar Footer: API Key Configuration */}
+            <div class="p-4 border-t border-white/5 bg-black/20 m-3 rounded-2xl border">
+              <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2 flex items-center justify-between">
+                <span>Gemini API Key</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              </label>
+              <input 
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                class="w-full bg-[#131722] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-red-500/60"
+              />
+              <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                Active key ready for live Gemini 3 Flash qualitative evaluations.
+              </p>
+            </div>
+          </aside>
+
+          {/* MAIN WORKSPACE CONTENT */}
+          <main class="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-[#090A10] to-[#05060A]">
+            
+            {/* TOP BAR */}
+            <header class="h-16 border-b border-white/5 px-8 flex items-center justify-between shrink-0 glass">
+              <div class="flex items-center space-x-4">
+                <span class="text-xs uppercase font-mono tracking-widest text-slate-500">Workspace</span>
+                <span class="text-slate-700">/</span>
+                <span class="text-sm font-semibold text-slate-200">
+                  {activeTab === 'catalog' && `${promos.length} Viable Promos Evaluated via Gemini API`}
+                  {activeTab === 'live_tester' && 'Interactive Interview Demonstration Mode'}
+                  {activeTab === 'architecture' && 'Production Scale & Evaluation Specification'}
+                </span>
+              </div>
+              <div class="flex items-center space-x-3">
+                <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono">
+                  Gemini 3 Flash • Online
+                </span>
+              </div>
+            </header>
+
+            {/* TAB 1: CATALOG VIEW */}
+            {activeTab === 'catalog' && (
+              <div class="flex-1 flex overflow-hidden">
+                {/* PROMOS FEED */}
+                <div class="flex-1 overflow-y-auto p-8 space-y-4">
+                  {/* Filter Toolbar */}
+                  <div class="flex items-center justify-between pb-4 border-b border-white/5">
+                    <div class="flex items-center space-x-4">
+                      <span class="text-xs font-semibold text-slate-400">Minimum Score:</span>
+                      <input 
+                        type="range" min="6.0" max="10.0" step="0.1" 
+                        value={filterScore} 
+                        onChange={(e) => setFilterScore(parseFloat(e.target.value))}
+                        class="w-32 accent-red-500" 
+                      />
+                      <span class="text-xs font-mono text-red-400 font-bold">{filterScore} / 10</span>
+                    </div>
+                    <span class="text-xs font-mono text-slate-500">
+                      Showing {filteredPromos.length} of {promos.length} promos
+                    </span>
+                  </div>
+
+                  {/* Promo List */}
+                  <div class="grid grid-cols-1 gap-4">
+                    {filteredPromos.map((p) => {
+                      const isSelected = selectedPromo && selectedPromo.rank === p.rank;
+                      return (
+                        <div 
+                          key={p.rank}
+                          onClick={() => setSelectedPromo(p)}
+                          class={`p-5 rounded-2xl cursor-pointer transition-all ${
+                            isSelected 
+                              ? 'glass glass-active scale-[1.005]' 
+                              : 'glass hover:border-white/20'
+                          }`}
+                        >
+                          <div class="flex items-start justify-between">
+                            <div class="flex items-center space-x-3">
+                              <span class="px-2.5 py-1 rounded-lg bg-red-600 text-white font-mono text-xs font-bold shadow-md shadow-red-600/30">
+                                #{p.rank}
+                              </span>
+                              <div>
+                                <h3 class="font-bold text-white text-base">{p.episode}</h3>
+                                <p class="text-xs text-slate-400 font-mono mt-0.5">
+                                  {p.segments[0].start_time} ➔ {p.segments[p.segments.length - 1].end_time} • {p.total_duration_sec}s
+                                </p>
+                              </div>
+                            </div>
+                            <div class="text-right">
+                              <div class="text-lg font-bold font-mono text-red-500">★ {p.scores.overall}</div>
+                              <span class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Overall Score</span>
+                            </div>
+                          </div>
+
+                          <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                              <span class="text-cyan-400 font-semibold flex items-center gap-1 mb-1">
+                                ⚡ 0-3s Hook
+                              </span>
+                              <p class="text-slate-300 line-clamp-2 leading-relaxed">{p.hook}</p>
+                            </div>
+                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                              <span class="text-pink-400 font-semibold flex items-center gap-1 mb-1">
+                                🔥 Cliffhanger
+                              </span>
+                              <p class="text-slate-300 line-clamp-2 leading-relaxed">{p.cliffhanger}</p>
+                            </div>
+                          </div>
+
+                          <div class="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+                            <span class="line-clamp-1 italic text-slate-400">"{p.why_it_works}"</span>
+                            <span class="shrink-0 text-slate-500 font-mono text-[10px] uppercase ml-4">
+                              {p.scores.eval_source || 'AI_EVAL'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* RIGHT PANEL: 9:16 VERTICAL PHONE SIMULATOR */}
+                <div class="w-96 border-l border-white/5 p-8 flex flex-col items-center justify-center shrink-0 bg-[#07080C]">
+                  {selectedPromo ? (
+                    <div class="w-full flex flex-col items-center">
+                      <div class="w-64 h-[490px] rounded-[38px] bg-black border-4 border-slate-700/80 phone-border flex flex-col justify-between p-5 relative overflow-hidden shadow-2xl">
+                        {/* Notch */}
+                        <div class="w-20 h-4 bg-slate-900 rounded-full mx-auto mb-2 shrink-0"></div>
+                        
+                        {/* Vertical Content Mockup */}
+                        <div class="space-y-2">
+                          <span class="text-[10px] font-mono uppercase bg-red-600 px-2 py-0.5 rounded text-white font-bold">
+                            PROMO #{selectedPromo.rank}
+                          </span>
+                          <h4 class="text-sm font-bold text-white leading-tight">{selectedPromo.episode}</h4>
+                          <p class="text-[10px] text-slate-400 font-mono">
+                            {selectedPromo.segments[0].start_time} - {selectedPromo.segments[selectedPromo.segments.length - 1].end_time} ({selectedPromo.total_duration_sec}s)
+                          </p>
+                        </div>
+
+                        {/* Visual Overlay of Hook & Cliff */}
+                        <div class="space-y-2 my-auto">
+                          <div class="bg-slate-900/90 border-l-2 border-cyan-400 p-2.5 rounded-r-lg text-[11px]">
+                            <span class="text-[10px] uppercase font-bold text-cyan-400 block mb-0.5">⚡ 0-3s Hook</span>
+                            <p class="text-slate-200 leading-tight">{selectedPromo.hook}</p>
+                          </div>
+                          <div class="bg-slate-900/90 border-l-2 border-pink-500 p-2.5 rounded-r-lg text-[11px]">
+                            <span class="text-[10px] uppercase font-bold text-pink-400 block mb-0.5">🔥 Cliffhanger</span>
+                            <p class="text-slate-200 leading-tight">{selectedPromo.cliffhanger}</p>
+                          </div>
+                        </div>
+
+                        {/* TikTok Bottom Bar Mockup */}
+                        <div class="pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+                          <span class="font-mono font-bold text-red-400">★ {selectedPromo.scores.overall}/10</span>
+                          <span>Vertical 9:16 Feed</span>
+                        </div>
+                      </div>
+
+                      <div class="mt-6 text-center">
+                        <span class="text-xs text-slate-500 uppercase tracking-widest font-mono">
+                          Simulated Mobile Feed
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div class="text-center text-slate-600">Select a promo to preview</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: LIVE TESTER */}
+            {activeTab === 'live_tester' && (
+              <div class="flex-1 overflow-y-auto p-8 max-w-5xl mx-auto w-full space-y-6">
+                <div class="glass p-6 rounded-2xl border border-white/10">
+                  <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-bold text-white">Live Screenplay Tester</h2>
+                    <span class="text-xs px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 font-mono border border-red-500/20">
+                      Upload or Paste .txt
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-400 mb-5 leading-relaxed">
+                    Upload an episode screenplay file (.txt) or paste raw text below to trigger the end-to-end pipeline:
+                    deterministic temporal slicing, 20–60s window generation, and live Gemini AI qualitative scoring.
+                  </p>
+
+                  {/* DRAG & DROP FILE UPLOAD AREA */}
+                  <div class="mb-4">
+                    <label class="border-2 border-dashed border-white/15 hover:border-red-500/50 transition-all rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer bg-[#0D101A] hover:bg-[#121624] group">
+                      <input 
+                        type="file" 
+                        accept=".txt"
+                        class="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              setScreenplayText(evt.target.result);
+                            };
+                            reader.readAsText(file);
+                          }
+                        }}
+                      />
+                      <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2 group-hover:bg-red-500/20 transition-all">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-slate-400 group-hover:text-red-400"></i>
+                      </div>
+                      <span class="text-xs font-semibold text-slate-300 group-hover:text-white">
+                        Click to upload screenplay file (.txt)
+                      </span>
+                      <span class="text-[11px] text-slate-500 mt-0.5">
+                        Reads any file from your data folder or new unseen screenplays
+                      </span>
+                    </label>
+                  </div>
+
+                  <div class="relative mb-4">
+                    <div class="text-[11px] font-mono uppercase text-slate-500 mb-1 flex justify-between items-center">
+                      <span>Screenplay Text Buffer</span>
+                      {screenplayText && (
+                        <button 
+                          onClick={() => setScreenplayText('')}
+                          class="text-red-400 hover:text-red-300 text-[10px] normal-case"
+                        >
+                          Clear Text
+                        </button>
+                      )}
+                    </div>
+                    <textarea 
+                      value={screenplayText}
+                      onChange={(e) => setScreenplayText(e.target.value)}
+                      placeholder="Paste screenplay text here, or click upload above..."
+                      class="w-full h-36 bg-[#0F131D] border border-white/10 rounded-xl p-4 font-mono text-xs text-slate-300 focus:outline-none focus:border-red-500 transition-all"
+                    ></textarea>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <button 
+                      onClick={() => setScreenplayText(`EPISODE NUMBER: Episode 99 (Live Test)
+EPISODE LOGLINE: The betrayed heir crashes the royal banquet with the authentic signet ring, throwing the hall into chaos.
+
+--- SCRIPT START ---
+
+SCENE 01
+**CAMERA:**
+Start: (00:00.00) | End: (00:03.50)
+Heavy double doors blast open as Alexander steps into the grand hall in mud-stained battle armor.
+
+**ALEXANDER (Cold, Booming):**
+Start: (00:03.50) | End: (00:07.00)
+"Did you think six feet of earth could hold the true Lord of Ashburton?"
+
+**CATHERINE (Gasping, Pale):**
+Start: (00:07.50) | End: (00:09.50)
+"Guards! Cut him down!"
+
+**ALEXANDER:**
+Start: (00:10.00) | End: (00:14.00)
+"Any man who draws steel commits high treason against the Crown."
+
+**ACTION:**
+Start: (00:22.00) | End: (00:27.50)
+Alexander throws the golden signet ring onto the banquet table. It spins furiously before resting before the Judge.
+
+**JUDGE (Shaking):**
+Start: (00:27.50) | End: (00:30.00)
+"The royal seal... it is authentic."
+
+**SOUND FX:**
+Start: (00:30.00) | End: (00:32.00)
+Ominous string swell fades to black.
+--- SCRIPT END ---`)}
+                      class="text-xs text-slate-500 hover:text-slate-300 underline font-mono"
+                    >
+                      Load Demo Sample Screenplay
+                    </button>
+
+                    <button 
+                      onClick={handleAnalyzeLive}
+                      disabled={analyzingLive || !screenplayText.trim()}
+                      class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 text-white font-semibold text-xs shadow-lg shadow-red-500/20 hover:brightness-110 transition-all disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      {analyzingLive ? (
+                        <>
+                          <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                          <span>Scoring via Gemini API...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🚀 Analyze & Generate Promos Live</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Live Results Display */}
+                {liveResults && (
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                      <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 font-mono">
+                        Identified & Ranked Promos ({liveResults.promos.length})
+                      </h3>
+                      <span class="text-xs text-emerald-400 font-mono">
+                        Parsed {liveResults.total_blocks} blocks • {liveResults.duration_ts}
+                      </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                      {liveResults.promos.map((p, idx) => (
+                        <div key={idx} class="glass p-5 rounded-2xl border border-white/10 hover:border-red-500/40 transition-all">
+                          <div class="flex items-start justify-between">
+                            <div class="flex items-center space-x-3">
+                              <span class="px-2.5 py-1 rounded-lg bg-red-600 text-white font-mono text-xs font-bold">
+                                #{idx + 1}
+                              </span>
+                              <div>
+                                <h4 class="font-bold text-white text-sm">{p.episode}</h4>
+                                <span class="text-xs text-slate-400 font-mono">
+                                  {p.segments[0].start_time} ➔ {p.segments[p.segments.length - 1].end_time} ({p.total_duration_sec}s)
+                                </span>
+                              </div>
+                            </div>
+                            <div class="text-right">
+                              <span class="text-base font-bold font-mono text-red-500">★ {p.scores.overall}</span>
+                              <span class="text-[10px] text-slate-500 block uppercase font-mono">{p.scores.eval_source}</span>
+                            </div>
+                          </div>
+
+                          <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                              <span class="text-cyan-400 font-semibold block mb-1">⚡ 0-3s Hook</span>
+                              <p class="text-slate-300 leading-relaxed">{p.hook}</p>
+                            </div>
+                            <div class="bg-black/30 p-3 rounded-xl border border-white/5">
+                              <span class="text-pink-400 font-semibold block mb-1">🔥 Cliffhanger</span>
+                              <p class="text-slate-300 leading-relaxed">{p.cliffhanger}</p>
+                            </div>
+                          </div>
+
+                          <div class="mt-3 text-xs text-slate-400 italic">
+                            💡 "{p.why_it_works}"
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: SYSTEM ARCHITECTURE */}
+            {activeTab === 'architecture' && (
+              <div class="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full space-y-6">
+                <div class="glass p-6 rounded-2xl">
+                  <h3 class="text-base font-bold text-white mb-2">Production Architecture & Scale</h3>
+                  <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                    The engine uses a 2-stage hybrid funnel designed to balance speed, cost, and qualitative narrative tension.
+                  </p>
+                  
+                  <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+                    <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                      <span class="text-red-400 font-bold block mb-1">Stage 1: Code / Heuristics</span>
+                      <ul class="text-slate-400 space-y-1 list-disc pl-4">
+                        <li>Sub-second temporal block parsing</li>
+                        <li>20-60s sliding window geometry</li>
+                        <li>Overlapping window suppression</li>
+                        <li>Filters 90%+ unviable stretches in 0.05s</li>
+                      </ul>
+                    </div>
+                    <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                      <span class="text-cyan-400 font-bold block mb-1">Stage 2: Generative AI Layer</span>
+                      <ul class="text-slate-400 space-y-1 list-disc pl-4">
+                        <li>Gemini 3 Flash qualitative reasoning</li>
+                        <li>Hook & Cliffhanger descriptions</li>
+                        <li>Standalone audience clarity analysis</li>
+                        <li>Under $0.05 per 50-episode show</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl">
+                  <h3 class="text-base font-bold text-white mb-2">Quality & Edge-Case Failure Analysis</h3>
+                  <ul class="text-xs text-slate-400 space-y-2 list-disc pl-4 leading-relaxed">
+                    <li><b class="text-slate-200">The "Lore / Prop" Trap:</b> In later episodes, cliffhangers hinge on specific family documents or objects that require backstory cold scrollers lack.</li>
+                    <li><b class="text-slate-200">False-Positive Visual Hooks:</b> Sudden door slams or camera snaps can trigger high hook scores even when dialogue afterwards slows down.</li>
+                    <li><b class="text-slate-200">Screenplay vs. Performed Pacing:</b> Pauses denoted in text may stretch or contract depending on the director and music edit.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+    // Initialize lucide icons after render
+    setTimeout(() => { if (window.lucide) window.lucide.createIcons(); }, 300);
+  </script>
+</body>
+</html>
