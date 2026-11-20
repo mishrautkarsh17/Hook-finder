@@ -9,7 +9,7 @@ import zipfile
 import shutil
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
@@ -20,9 +20,25 @@ from ranker import process_show, export_outputs
 
 app = FastAPI(title="Kuku Promo Studio API")
 
-# Serve static directory (contains React index.html)
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
-MASTER_JSON_PATH = os.path.join(os.path.dirname(__file__), "outputs", "promos_master.json")
+# Root directory resolution
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(ROOT_DIR, "static")
+MASTER_JSON_PATH = os.path.join(ROOT_DIR, "outputs", "promos_master.json")
+
+# Determine writable cache directory (handles Vercel / serverless where only /tmp is writable)
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    CACHE_DIR = "/tmp/cache"
+else:
+    CACHE_DIR = os.path.join(ROOT_DIR, "cache")
+
+try:
+    os.makedirs(CACHE_DIR, exist_ok=True)
+except Exception:
+    CACHE_DIR = "/tmp/cache"
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+    except Exception:
+        pass
 
 class ScreenplayRequest(BaseModel):
     screenplay_text: str
@@ -42,8 +58,11 @@ def analyze_screenplay(req: ScreenplayRequest):
     if not req.screenplay_text.strip():
         raise HTTPException(status_code=400, detail="Screenplay text cannot be empty.")
 
-    os.makedirs("cache", exist_ok=True)
-    temp_path = os.path.join("cache", "react_temp_ep.txt")
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+    except Exception:
+        pass
+    temp_path = os.path.join(CACHE_DIR, "react_temp_ep.txt")
     with open(temp_path, "w", encoding="utf-8") as f:
         f.write(req.screenplay_text)
 
@@ -104,10 +123,13 @@ async def upload_whole_show(
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded.")
 
-    upload_dir = os.path.join("cache", "uploaded_batch_show")
+    upload_dir = os.path.join(CACHE_DIR, "uploaded_batch_show")
     if os.path.exists(upload_dir):
         shutil.rmtree(upload_dir, ignore_errors=True)
-    os.makedirs(upload_dir, exist_ok=True)
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+    except Exception:
+        pass
 
     extracted_txt_count = 0
 
@@ -140,7 +162,10 @@ async def upload_whole_show(
 
     # Run the full ranking pipeline on this newly uploaded show
     ranked_promos = process_show(data_dir=upload_dir, api_key=api_key)
-    export_outputs(ranked_promos)
+    try:
+        export_outputs(ranked_promos)
+    except Exception:
+        pass
 
     return {
         "episodes_processed": extracted_txt_count,
@@ -148,9 +173,17 @@ async def upload_whole_show(
         "promos": ranked_promos[:50]  # return top 50
     }
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def serve_index():
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h1>Kuku Promo Studio API is running</h1>")
+
+@app.get("/index.html", response_class=HTMLResponse)
+def serve_index_html():
+    return serve_index()
 
 if __name__ == "__main__":
     import uvicorn

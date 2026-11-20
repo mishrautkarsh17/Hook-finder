@@ -13,8 +13,20 @@ import hashlib
 import requests
 from typing import Dict, List, Any, Optional
 
-CACHE_DIR = "cache"
-os.makedirs(CACHE_DIR, exist_ok=True)
+# Determine writable cache directory (handles Vercel / serverless read-only filesystem)
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    CACHE_DIR = "/tmp/cache"
+else:
+    CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+
+try:
+    os.makedirs(CACHE_DIR, exist_ok=True)
+except Exception:
+    CACHE_DIR = "/tmp/cache"
+    try:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+    except Exception:
+        pass
 
 def candidate_to_prompt_text(candidate: Dict[str, Any]) -> str:
     """Formats candidate blocks into readable screenplay format for LLM evaluation."""
