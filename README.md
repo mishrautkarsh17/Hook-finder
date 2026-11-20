@@ -24,30 +24,69 @@ It processes timestamped screenplays with sub-second precision, generates 20–6
 
 ## 🚀 Quickstart
 
-### 1. Clone the Repository
+### Method 1: Running Directly from the Downloaded Folder (No Git Required)
+If you already have this folder on your machine (or unzipped the project archive):
+
+1. **Open a terminal in the project folder:**
+   - **Windows:** Open the folder in File Explorer, click the address bar at the top, type `powershell` or `cmd`, and press **Enter**.
+   - **macOS / Linux:** Open your terminal and `cd` to the folder directory:
+     ```bash
+     cd /path/to/Hook-finder
+     ```
+
+2. **(Optional) Create and activate a virtual environment:**
+   ```bash
+   # Windows (PowerShell)
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
+
+   # macOS / Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Launch the Web Studio:**
+   - **Option A — Modern React 18 + Tailwind Studio (Recommended):**
+     ```bash
+     python server.py
+     ```
+     Open **[http://localhost:8000](http://localhost:8000)** in your browser.
+   - **Option B — Streamlit Dashboard:**
+     ```bash
+     streamlit run app.py
+     ```
+     Open **[http://localhost:8501](http://localhost:8501)** in your browser.
+
+5. **(Optional) Run the Batch CLI Pipeline directly:**
+   ```bash
+   python ranker.py
+   ```
+   This processes all 50 episode screenplays in `data/`, generates candidate cuts, evaluates them, and writes the ranked results to `outputs/promos_master.json` and `outputs/promos_master.md`.
+
+> **Note on AI Keys:** The engine works **100% offline out-of-the-box** using deterministic NLP heuristic scoring. If you want live Gemini generative AI evaluations, optionally set your key:
+> ```bash
+> # Windows (PowerShell)
+> $env:GEMINI_API_KEY="your_api_key_here"
+> # macOS / Linux
+> export GEMINI_API_KEY="your_api_key_here"
+> ```
+> *(You can also paste the API key directly in the web UI header.)*
+
+---
+
+### Method 2: Clone from GitHub
 ```bash
 git clone https://github.com/mishrautkarsh17/Hook-finder.git
 cd Hook-finder
-```
-
-### 2. Install Dependencies
-```bash
 pip install -r requirements.txt
-```
-
-### 3. Run the Web Application
-
-#### Option A: Modern React + FastAPI Dashboard (Recommended)
-```bash
 python server.py
 ```
 Open **[http://localhost:8000](http://localhost:8000)** in your browser.
-
-#### Option B: Streamlit Dashboard
-```bash
-streamlit run app.py
-```
-Open **[http://localhost:8501](http://localhost:8501)** in your browser.
 
 ---
 
@@ -65,7 +104,9 @@ Open **[http://localhost:8501](http://localhost:8501)** in your browser.
 ├── ranker.py                # Global ranking pipeline & exporter
 ├── server.py                # FastAPI server serving React SPA & REST API
 ├── app.py                   # Streamlit dashboard alternative
-├── SOLUTION_DOC.md          # Official 2-page solution write-up
+├── SOLUTION_DOC.md          # Official 2-page solution write-up (Markdown)
+├── SOLUTION_DOC.html        # Print-ready A4 2-page solution document
+├── PRESENTATION_SLIDES.html # 16:9 widescreen presentation slides for demo video
 └── requirements.txt         # Python dependencies
 ```
 
