@@ -19,7 +19,7 @@ from candidate_generator import generate_episode_candidates, generate_cross_epis
 from scorer import score_candidate
 from ranker import process_show, export_outputs
 
-app = FastAPI(title="Kuku Promo Studio API")
+app = FastAPI(title="Kuku Promo Studio API", redirect_slashes=False)
 
 # Root directory resolution
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
