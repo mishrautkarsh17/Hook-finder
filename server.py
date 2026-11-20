@@ -186,6 +186,14 @@ def serve_index():
 def serve_index_html():
     return serve_index()
 
+@app.get("/api/index", response_class=HTMLResponse)
+def serve_api_index():
+    return serve_index()
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "app": "Kuku Promo Studio API"}
+
 if __name__ == "__main__":
     import uvicorn
     # If run in Vercel build environment, exit cleanly with 0

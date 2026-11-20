@@ -1,11 +1,22 @@
 import sys
 import os
+import traceback
+from fastapi import FastAPI, Response
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.abspath(os.path.join(current_dir, ".."))
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
+# Top-level app variable unconditionally declared for Vercel AST scanner
+app = FastAPI(title="Kuku Promo Studio")
 
-from server import app as _server_app
+try:
+    ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if ROOT_DIR not in sys.path:
+        sys.path.insert(0, ROOT_DIR)
 
-app = _server_app
+    from server import app as server_app
+    app = server_app
+except Exception as e:
+    err_msg = f"Startup Error: {str(e)}\n{traceback.format_exc()}"
+    print(err_msg)
+
+    @app.get("/{rest_of_path:path}")
+    def catch_all(rest_of_path: str = ""):
+        return Response(content=err_msg, media_type="text/plain", status_code=500)
